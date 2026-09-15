@@ -98,6 +98,7 @@ class WiFiClass
     char *ssid(int _ssidNumber);
     bool auth(int _ssidNumber);
     int rssi(int _ssidNumber);
+    int currentRSSI();
     IPAddress localIP();
     IPAddress gatewayIP();
     IPAddress subnetMask();

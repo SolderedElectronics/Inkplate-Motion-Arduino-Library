@@ -1019,6 +1019,35 @@ int WiFiClass::rssi(int _ssidNumber)
 }
 
 /**
+ * @brief   Method gets the live RSSI of the AP the ESP32 is currently connected to, without needing
+ *          a prior scanNetworks() call. Confirmed on hardware: firmware's "+CWJAP:" response matches
+ *          stock ESP-AT format ("+CWJAP:<ssid>,<bssid>,<channel>,<rssi>,...").
+ *
+ * @return  int
+ *          RSSI value in dBm of the current AP connection.
+ *          INT16_MIN - Not connected to an AP, or the command failed.
+ */
+int WiFiClass::currentRSSI()
+{
+    // Send AT command and get the response. Check if the response is expected. Otherwise, return sentinel.
+    // Confirmed on hardware: while disconnected, this command returns a bare "OK" with no "+CWJAP:" line,
+    // so this call fails cleanly instead of hanging or returning stale data.
+    if (!sendAtCommandWithResponse((char *)"AT+CWJAP?\r\n", 200ULL, 4ULL, (char *)"+CWJAP:",
+                                   INKPLATE_ESP32_AT_EXPECTED_RESPONSE_START, true, NULL, 0, 0, NULL))
+        return INT16_MIN;
+
+    // Parse the channel and RSSI fields out of the response. SSID and BSSID are quoted strings that may
+    // themselves contain commas (see begin()'s note on escaping), so skip them by quote matching instead
+    // of splitting on commas.
+    int _channel = 0;
+    int _rssi = INT16_MIN;
+    if (sscanf(_dataBuffer, "+CWJAP:\"%*[^\"]\",\"%*[^\"]\",%d,%d", &_channel, &_rssi) != 2)
+        return INT16_MIN;
+
+    return _rssi;
+}
+
+/**
  * @brief   Obtain a local IP.
  *
  * @return  IPAddress
