@@ -934,6 +934,37 @@ bool WiFiClass::disconnect()
 }
 
 /**
+ * @brief   Enable or disable the ESP32's own auto-reconnect to the last used AP. When enabled, the ESP32
+ *          firmware handles rejoining the AP by itself (after the AP drops and comes back, for example)
+ *          without any host-side polling or credential caching. Confirmed on hardware: this firmware
+ *          accepts AT+CWAUTOCONN and physically rejoins an AP that was toggled off and back on, with no
+ *          intervention from the STM32 host.
+ *
+ * @param   bool _enable
+ *          true - Enable auto-reconnect to the last used AP.
+ *          false - Disable auto-reconnect.
+ * @return  bool
+ *          true - Command executed successfully.
+ *          false - Command failed.
+ *
+ * @note    This setting is not persisted across power cycles unless storeSettingsInNVM(true) is also set;
+ *          without it, auto-reconnect only applies for as long as the ESP32 stays powered.
+ */
+bool WiFiClass::autoReconnect(bool _enable)
+{
+    // Create the AT command depending on the choice of enabling/disabling auto-reconnect.
+    sprintf(_dataBuffer, "AT+CWAUTOCONN=%d\r\n", _enable ? 1 : 0);
+
+    // Send AT command and get the response. Check if the response is expected. Otherwise, return false.
+    if (!sendAtCommandWithResponse(_dataBuffer, 20ULL, 4ULL, (char *)esp32AtCmdResponseOK,
+                                   INKPLATE_ESP32_AT_EXPECTED_RESPONSE_START, true, NULL, 0, 0, NULL))
+        return false;
+
+    // Otherwise, return ok.
+    return true;
+}
+
+/**
  * @brief   Methods prompts ESP32 to run a WiFi network scan. Scan takes about 2 seconds.
  *
  * @return  int

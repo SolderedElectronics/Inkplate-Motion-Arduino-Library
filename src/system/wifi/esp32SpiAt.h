@@ -94,6 +94,7 @@ class WiFiClass
     bool begin(char *_ssid, char *_pass);
     bool connected();
     bool disconnect();
+    bool autoReconnect(bool _enable);
     int scanNetworks();
     char *ssid(int _ssidNumber);
     bool auth(int _ssidNumber);
